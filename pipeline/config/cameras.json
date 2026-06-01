@@ -1,0 +1,86 @@
+{
+  "_comment": "Camera metadata for Store ST1008 (Brigade Road, Bangalore). Source: Section 2.1 and 2.2 of Master Implementation Blueprint. Camera-to-zone mapping inferred from file sizes and floor-plan position.",
+  "_assumption": "A-1: Camera-to-zone mapping is inferred. Must be confirmed by visual inspection of first 60s of each clip.",
+
+  "CAM_1": {
+    "camera_id": "CAM_1",
+    "store_id": "ST1008",
+    "file": "CAM 1.mp4",
+    "file_size_mb": 180,
+    "primary_zone": "ENTRY_EXIT",
+    "secondary_zones": ["ZONE_FOH", "ZONE_BACKLIT"],
+    "monitors_entry": true,
+    "entry_threshold_x": 100,
+    "entry_direction": "positive_x",
+    "rationale": "Largest file; entry cameras capture most motion",
+    "homography": {
+      "status": "UNCALIBRATED",
+      "fallback": "primary_zone_only",
+      "zone_confidence_override": "LOW"
+    }
+  },
+
+  "CAM_2": {
+    "camera_id": "CAM_2",
+    "store_id": "ST1008",
+    "file": "CAM 2.mp4",
+    "file_size_mb": 162,
+    "primary_zone": "ZONE_FOH",
+    "secondary_zones": ["ZONE_GOOD_VIBES", "ZONE_DERMDOC", "ZONE_MINIMALIST", "ZONE_AQUALOGICA", "ZONE_LAKME_SKIN", "ZONE_ACCESSORIES"],
+    "monitors_entry": false,
+    "rationale": "Second-largest; floor coverage and top-shelf brand zones",
+    "homography": {
+      "status": "UNCALIBRATED",
+      "fallback": "primary_zone_only",
+      "zone_confidence_override": "LOW"
+    }
+  },
+
+  "CAM_3": {
+    "camera_id": "CAM_3",
+    "store_id": "ST1008",
+    "file": "CAM 3.mp4",
+    "file_size_mb": 191,
+    "primary_zone": "ZONE_CASH_COUNTER",
+    "secondary_zones": ["ZONE_MAKEUP_UNIT"],
+    "monitors_entry": false,
+    "rationale": "Largest by size; billing area peaks — critical for POS correlation",
+    "homography": {
+      "status": "UNCALIBRATED",
+      "fallback": "primary_zone_only",
+      "zone_confidence_override": "LOW"
+    }
+  },
+
+  "CAM_4": {
+    "camera_id": "CAM_4",
+    "store_id": "ST1008",
+    "file": "CAM 4.mp4",
+    "file_size_mb": 73,
+    "primary_zone": "ZONE_FRAGRANCE",
+    "secondary_zones": ["ZONE_NAIL", "ZONE_PMU"],
+    "monitors_entry": false,
+    "rationale": "Focused zone camera for fragrance island and PMU area",
+    "homography": {
+      "status": "UNCALIBRATED",
+      "fallback": "primary_zone_only",
+      "zone_confidence_override": "LOW"
+    }
+  },
+
+  "CAM_5": {
+    "camera_id": "CAM_5",
+    "store_id": "ST1008",
+    "file": "CAM 5.mp4",
+    "file_size_mb": 73,
+    "primary_zone": "ZONE_EB_KOREAN",
+    "secondary_zones": ["ZONE_THE_FACE_SHOP", "ZONE_MAYBELLINE", "ZONE_FACES_CANADA", "ZONE_LAKME_MAKEUP", "ZONE_COLORBAR_SUGAR", "ZONE_SWISS_BEAUTY", "ZONE_RENEE_NY_BAE", "ZONE_ALPS_GOODNESS", "ZONE_STREAX"],
+    "monitors_entry": false,
+    "rationale": "Bottom-shelf brand zones (symmetric size to CAM_4)",
+    "homography": {
+      "status": "UNCALIBRATED",
+      "fallback": "primary_zone_only",
+      "zone_confidence_override": "LOW"
+    }
+  }
+}

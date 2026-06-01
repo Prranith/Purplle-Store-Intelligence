@@ -1,0 +1,10 @@
+data
+events
+.git
+.vscode
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.DS_Store
+Problem Statement and Data Sources/CCTV Footage*

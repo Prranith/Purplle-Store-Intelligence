@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ST1008 Brigade Road - Live Store Intelligence Dashboard</title>
+    <meta name="description" content="Apex Retail Offline Store Analytics platform visualizing visitor flow, retail conversions, and anomalies.">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: rgba(17, 24, 39, 0.7);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --primary: #c084fc;
+            --primary-gradient: linear-gradient(135deg, #c084fc 0%, #818cf8 100%);
+            --secondary: #38bdf8;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 10% 20%, rgba(129, 140, 248, 0.05) 0px, transparent 50%),
+                radial-gradient(at 90% 80%, rgba(192, 132, 252, 0.05) 0px, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-main);
+            font-family: 'Outfit', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header Layout */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 20px;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .store-badge {
+            background: rgba(192, 132, 252, 0.15);
+            border: 1px solid rgba(192, 132, 252, 0.3);
+            color: var(--primary);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 10px;
+            border-radius: 99px;
+            text-transform: uppercase;
+        }
+
+        .live-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+        }
+
+        .pulse {
+            width: 8px;
+            height: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7);
+            animation: pulse-animation 1.5s infinite;
+        }
+
+        @keyframes pulse-animation {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(52, 211, 153, 0); }
+        }
+
+        /* Metrics Cards Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .card {
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(192, 132, 252, 0.2);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: var(--primary-gradient);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .card:hover::before { opacity: 1; }
+        .card-label { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; font-weight: 500; }
+        .card-value { font-size: 32px; font-weight: 700; margin-bottom: 4px; }
+        .card-subtext { font-size: 12px; color: var(--text-muted); }
+
+        /* Visualisation Section */
+        .visualisation-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        @media (max-width: 1024px) {
+            .visualisation-section { grid-template-columns: 1fr; }
+        }
+
+        .chart-box {
+            background: var(--surface-color);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 24px;
+            min-height: 400px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chart-box h2 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 24px;
+            color: var(--text-main);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chart-canvas-container {
+            position: relative;
+            flex-grow: 1;
+            width: 100%;
+            height: 100%;
+            min-height: 300px;
+        }
+
+        /* Zone Revenue Table */
+        .revenue-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .revenue-table th, .revenue-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .revenue-table th { color: var(--text-muted); font-weight: 500; }
+        .revenue-table tr:last-child td { border-bottom: none; }
+        .revenue-table .gmv { color: var(--success); font-weight: 600; }
+
+        /* Logs and Alerts */
+        .logs-and-alerts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .logs-and-alerts { grid-template-columns: 1fr; }
+        }
+
+        .alert-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .alert-item {
+            padding: 14px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+            background: rgba(255, 255, 255, 0.02);
+            font-size: 13px;
+            animation: fadeIn 0.5s ease;
+        }
+        .alert-item.severity-CRITICAL { border-left-color: var(--danger); background: rgba(248, 113, 113, 0.05); }
+        .alert-item.severity-WARN { border-left-color: var(--warning); background: rgba(251, 191, 36, 0.05); }
+        .alert-item.severity-INFO { border-left-color: var(--secondary); background: rgba(56, 189, 248, 0.05); }
+
+        .alert-header { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 6px; }
+        .alert-time { font-size: 11px; color: var(--text-muted); }
+        .alert-action { margin-top: 6px; font-style: italic; color: var(--primary); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.1); border-radius: 99px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Dashboard Header -->
+        <header>
+            <div class="header-logo">
+                <span class="pulse"></span>
+                <h1>APEX RETAIL</h1>
+                <span class="store-badge">ST1008 Brigade Road</span>
+            </div>
+            <div class="live-indicator">
+                <span class="pulse"></span>
+                <span>Live Intelligence Feed</span>
+            </div>
+        </header>
+
+        <!-- Main Metrics Grid -->
+        <section class="metrics-grid">
+            <div class="card">
+                <div class="card-label">Unique Visitors</div>
+                <div class="card-value" id="metric-visitors">0</div>
+                <div class="card-subtext">Session deduplicated (today)</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Store Conversion Rate</div>
+                <div class="card-value" id="metric-conversion">0.0%</div>
+                <div class="card-subtext">Purchasing visitors</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Peak Hour</div>
+                <div class="card-value" id="metric-peak-hour">-</div>
+                <div class="card-subtext">Busiest traffic window</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Queue Abandonment Rate</div>
+                <div class="card-value" id="metric-abandonment">0.0%</div>
+                <div class="card-subtext">Lost sales at billing</div>
+            </div>
+            <div class="card">
+                <div class="card-label">Total GMV (POS)</div>
+                <div class="card-value" id="metric-gmv" style="color: var(--success);">₹ 0</div>
+                <div class="card-subtext">Correlated revenue</div>
+            </div>
+        </section>
+
+        <!-- Analytics Visualisation Section 1 -->
+        <section class="visualisation-section">
+            <!-- Hourly Traffic -->
+            <div class="chart-box">
+                <h2>Hourly Visitor Traffic</h2>
+                <div class="chart-canvas-container">
+                    <canvas id="hourlyChart"></canvas>
+                </div>
+            </div>
+            <!-- Conversion Funnel -->
+            <div class="chart-box">
+                <h2>Visitor Conversion Funnel</h2>
+                <div class="chart-canvas-container">
+                    <canvas id="funnelChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Analytics Visualisation Section 2 -->
+        <section class="visualisation-section">
+            <!-- Zone Revenue Attribution -->
+            <div class="chart-box">
+                <h2>Top Zones by Revenue Contribution</h2>
+                <div style="overflow-x: auto; flex-grow: 1;">
+                    <table class="revenue-table" id="revenue-table">
+                        <thead>
+                            <tr>
+                                <th>Zone / Brand Area</th>
+                                <th>Visitors</th>
+                                <th>Conv. Rate</th>
+                                <th>GMV Contribution</th>
+                                <th>% Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="5" style="text-align: center;">Loading data...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Heatmap -->
+            <div class="chart-box">
+                <h2>Zone Engagement Heatmap <span id="heatmap-confidence" class="store-badge" style="font-size: 10px; background: rgba(56, 189, 248, 0.1);">Confidence: -</span></h2>
+                <div class="chart-canvas-container">
+                    <canvas id="heatmapChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Alerts and Diagnostic Feeds Section -->
+        <section class="logs-and-alerts">
+            <div class="chart-box">
+                <h2>Active Operational Anomalies</h2>
+                <ul class="alert-list" id="anomalies-list">
+                    <li class="alert-item severity-INFO">
+                        <div class="alert-header">
+                            <span>System Diagnostics Active</span>
+                            <span class="alert-time">Monitoring...</span>
+                        </div>
+                        <div>No active alerts in current session stream. Ready.</div>
+                    </li>
+                </ul>
+            </div>
+            <div class="chart-box">
+                <h2>CCTV Processing Pipeline Status</h2>
+                <ul class="alert-list" id="health-list">
+                    <li class="alert-item" style="border-left-color: var(--success);">
+                        <div class="alert-header"><span>Ingestion Diagnostics</span></div>
+                        <div>Polling status of feed processes.</div>
+                    </li>
+                </ul>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const storeId = "ST1008";
+
+        let funnelChartInst = null;
+        let heatmapChartInst = null;
+        let hourlyChartInst = null;
+
+        Chart.defaults.color = '#9ca3af';
+        Chart.defaults.font.family = 'Outfit';
+
+        function initCharts() {
+            // Hourly Chart
+            const ctxHourly = document.getElementById('hourlyChart').getContext('2d');
+            hourlyChartInst = new Chart(ctxHourly, {
+                type: 'line',
+                data: { labels: [], datasets: [{
+                    label: 'Visitors', data: [],
+                    borderColor: '#c084fc', backgroundColor: 'rgba(192, 132, 252, 0.2)',
+                    fill: true, tension: 0.4, pointRadius: 4
+                }]},
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // Funnel Chart
+            const ctxFunnel = document.getElementById('funnelChart').getContext('2d');
+            funnelChartInst = new Chart(ctxFunnel, {
+                type: 'bar',
+                data: {
+                    labels: ['ENTRY', 'ZONE_VISIT', 'BILLING_QUEUE', 'PURCHASE'],
+                    datasets: [{
+                        label: 'Visitors', data: [0, 0, 0, 0],
+                        backgroundColor: ['#3b82f6', '#8b5cf6', '#d946ef', '#10b981'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' } },
+                        y: { grid: { display: false }, ticks: { color: '#f3f4f6', font: { weight: 'bold' } } }
+                    }
+                }
+            });
+
+            // Heatmap Chart
+            const ctxHeatmap = document.getElementById('heatmapChart').getContext('2d');
+            heatmapChartInst = new Chart(ctxHeatmap, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Visit Count', data: [], backgroundColor: 'rgba(56, 189, 248, 0.7)', borderRadius: 4 },
+                        { label: 'Revenue %', data: [], backgroundColor: 'rgba(52, 211, 153, 0.7)', borderRadius: 4 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } },
+                    scales: {
+                        x: { grid: { display: false }, ticks: { maxRotation: 45, minRotation: 45 } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' } }
+                    }
+                }
+            });
+        }
+
+        async function fetchAndUpdateDashboard() {
+            try {
+                // 1. Metrics & Hourly
+                const metricsRes = await fetch(`/stores/${storeId}/metrics`);
+                if (metricsRes.ok) {
+                    const data = await metricsRes.json();
+                    document.getElementById('metric-visitors').innerText = data.unique_visitors;
+                    document.getElementById('metric-conversion').innerText = (data.conversion_rate * 100).toFixed(1) + '%';
+                    document.getElementById('metric-abandonment').innerText = (data.abandonment_rate * 100).toFixed(1) + '%';
+                    document.getElementById('metric-peak-hour').innerText = data.peak_hour || '-';
+                    
+                    if (data.hourly_breakdown && hourlyChartInst) {
+                        hourlyChartInst.data.labels = data.hourly_breakdown.map(h => h.hour);
+                        hourlyChartInst.data.datasets[0].data = data.hourly_breakdown.map(h => h.visitors);
+                        hourlyChartInst.update();
+                    }
+                }
+
+                // 2. Zone Revenue
+                const revRes = await fetch(`/stores/${storeId}/zone-revenue`);
+                if (revRes.ok) {
+                    const data = await revRes.json();
+                    document.getElementById('metric-gmv').innerText = '₹ ' + data.total_gmv_inr.toLocaleString('en-IN');
+                    
+                    const tbody = document.querySelector('#revenue-table tbody');
+                    tbody.innerHTML = '';
+                    // Top 6 zones
+                    data.zones.slice(0, 6).forEach(z => {
+                        const name = z.zone_id.replace('ZONE_', '').replace(/_/g, ' ');
+                        tbody.innerHTML += `
+                            <tr>
+                                <td><strong>${name}</strong></td>
+                                <td>${z.visitors}</td>
+                                <td>${(z.conversion_rate * 100).toFixed(1)}%</td>
+                                <td class="gmv">₹ ${z.total_gmv_inr.toLocaleString('en-IN')}</td>
+                                <td>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span>${z.revenue_contribution_pct.toFixed(1)}%</span>
+                                        <div style="width:50px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px;">
+                                            <div style="width:${z.revenue_contribution_pct}%; height:100%; background:var(--success); border-radius:3px;"></div>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                // 3. Funnel
+                const funnelRes = await fetch(`/stores/${storeId}/funnel`);
+                if (funnelRes.ok) {
+                    const data = await funnelRes.json();
+                    funnelChartInst.data.datasets[0].data = data.funnel.map(f => f.count);
+                    funnelChartInst.update();
+                }
+
+                // 4. Heatmap
+                const heatmapRes = await fetch(`/stores/${storeId}/heatmap`);
+                if (heatmapRes.ok) {
+                    const data = await heatmapRes.json();
+                    const activeZones = data.zones.filter(z => z.visit_count > 0 || z.revenue_contribution_pct > 0)
+                                        .sort((a,b) => b.visit_count - a.visit_count).slice(0, 10);
+                    
+                    heatmapChartInst.data.labels = activeZones.map(z => z.zone_id.replace("ZONE_", ""));
+                    heatmapChartInst.data.datasets[0].data = activeZones.map(z => z.visit_count);
+                    heatmapChartInst.data.datasets[1].data = activeZones.map(z => z.revenue_contribution_pct);
+                    heatmapChartInst.update();
+
+                    const banner = document.getElementById('heatmap-confidence');
+                    const isHigh = activeZones.some(z => z.data_confidence === "HIGH");
+                    banner.innerText = isHigh ? "Confidence: HIGH" : "Confidence: LOW";
+                    banner.style.color = isHigh ? "var(--success)" : "var(--warning)";
+                }
+
+                // 5. Anomalies
+                const anomaliesRes = await fetch(`/stores/${storeId}/anomalies`);
+                if (anomaliesRes.ok) {
+                    const data = await anomaliesRes.json();
+                    const listElement = document.getElementById('anomalies-list');
+                    if (data.anomalies.length === 0) {
+                        listElement.innerHTML = `<li class="alert-item severity-INFO"><div class="alert-header"><span>All Clear</span></div><div>No active anomalies.</div></li>`;
+                    } else {
+                        listElement.innerHTML = data.anomalies.map(a => `
+                            <li class="alert-item severity-${a.severity}">
+                                <div class="alert-header"><span>${a.type}</span><span class="alert-time">${new Date(a.detected_at).toLocaleTimeString()}</span></div>
+                                <div>${a.description}</div>
+                                <div class="alert-action">Action: ${a.suggested_action}</div>
+                            </li>`).join('');
+                    }
+                }
+
+            } catch (err) {
+                console.error("Dashboard error:", err);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            initCharts();
+            fetchAndUpdateDashboard();
+            setInterval(fetchAndUpdateDashboard, 3000);
+        });
+    </script>
+</body>
+</html>
