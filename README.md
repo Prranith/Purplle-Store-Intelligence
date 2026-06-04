@@ -47,9 +47,10 @@ The FastAPI service exposes fully documented interactive Swagger endpoints:
 ### Core Endpoints
 
 * **`POST /events/ingest`**: Idempotent batch upload endpoint validating UUIDs and schemas. Handles duplicate posts using database constraints. Returns `207 Multi-Status` for partial success detail.
-* **`GET /stores/{id}/metrics`**: Real-time sales metrics (visitor counts, conversions, queues, dwell times) utilizing the **5-minute pre-transaction billing counter correlation window**.
+* **`GET /stores/{id}/metrics`**: Real-time sales metrics (visitor counts, conversions, queues, dwell times) utilizing the **5-minute pre-transaction billing counter correlation window**. Includes hourly traffic breakdown.
 * **`GET /stores/{id}/funnel`**: Session-level conversion drop-off counts.
-* **`GET /stores/{id}/heatmap`**: Normalized product brand visitor score allocations.
+* **`GET /stores/{id}/zone-revenue`**: **NEW** Links CCTV zone-dwelling data with POS brand transactions to calculate GMV, conversion rate, and revenue contribution per physical shelf zone.
+* **`GET /stores/{id}/heatmap`**: Normalized product brand visitor score allocations enriched with category labels and revenue contribution percentage.
 * **`GET /stores/{id}/anomalies`**: Operational flags.
 * **`GET /health`**: Diagnostics reporting connection pool status and camera feed warning metrics.
 
@@ -67,4 +68,53 @@ pip install -r app/requirements.txt
 python -m pytest --cov=app --cov-report=term-missing tests/
 ```
 
-* **Current Coverage:** **75% statement coverage** with 15 passing test specs verifying edge cases (zero-purchases, re-entries, group entries, staff exclusions, 503 DB errors, low-confidence propagation, and queue spikes).
+* **Current Coverage:** **85% statement coverage** with 28 passing test specs verifying edge cases (zone-revenue mapping, zero-purchases, re-entries, group entries, staff exclusions, 503 DB errors, low-confidence propagation, and queue spikes).
+
+## **Instructions To Run (For Reviewers)**
+
+- **Prerequisites:** Install Docker and Docker Compose (desktop or CLI). Ensure Docker daemon is running.
+- **Start the service (single command):** From the project root run:
+
+```bash
+cd Purplle
+docker compose up -d --build
+```
+
+- **Verify the service is healthy:**
+
+```bash
+curl http://localhost:8000/health
+```
+
+- **Open the interactive UI and API docs:**
+
+- Dashboard: http://localhost:8000/dashboard
+- Swagger UI: http://localhost:8000/docs
+
+- **Follow logs (optional):**
+
+```bash
+docker compose logs --no-color --follow
+```
+
+- **Run unit tests locally:** (requires Python & virtualenv)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate    # or `.venv\Scripts\Activate.ps1` on Windows PowerShell
+pip install -r app/requirements.txt
+python -m pytest --cov=app tests/
+```
+
+- **Stop and remove containers & volumes:**
+
+```bash
+docker compose down -v --rmi local
+```
+
+### Troubleshooting
+- If the `/health` endpoint returns a POS CSV missing warning, place the provided Brigade CSV in the project root under its original path: `Problem Statement and Data Sources/Brigade_Bangalore_10_April_26 bc6219c.csv` and restart the service.
+- The original CCTV video files were excluded from the public repository because they exceed GitHub file-size limits. To enable full pipeline replay with video files, copy the `CCTV Footage` folder into `Problem Statement and Data Sources/` before rebuilding the image.
+- If `docker compose` fails with network or build errors, try increasing Docker's resources (CPU / memory) and retry the `docker compose up -d --build` command.
+
+If you'd like, I can also add a tiny checklist of the four submission screenshots and capture them now while the service is running.
